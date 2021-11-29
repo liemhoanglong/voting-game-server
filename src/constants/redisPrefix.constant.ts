@@ -1,0 +1,13 @@
+export const SIGN_IN_ATTEMPT:string = 'attempt:sign-in:';
+export const RESET_PASSWORD_ATTEMPT: string = 'attempt:reset-password:';
+export const RESEND_VERIFICATION_ATTEMPT: string = 'attempt:resend-verification:';
+export const VERIFY_EMAIL_TOKEN: string = 'attempt:verify-email-token:';
+export const RESET_PASSWORD_TOKEN: string = 'attempt:reset-password-token:';
+export const GAME_ROOM: string = 'lumin:game-room:';
+export const USER_CONNECTION: string = 'lumin:game-connection:';
+export const HOST_ROOM: string = 'lumin:host-room:';
+export const ADMIN_ROOM: string = 'lumin:admin-room:';
+export const TIMER_ROOM: string = 'lumin:timer-room:';
+export const IS_START_COUNTDOWN: string = 'lumin:is-start-timer:';
+export const CARD_ISSUE: string = 'lumin:card-issue:';
+export const CURRENT_CARD: string = 'lumin:current-card:';

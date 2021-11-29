@@ -1,0 +1,85 @@
+scalar Date
+
+type User {
+  _id: String
+  name: String
+  email: String
+  password: String
+  isVerified: Boolean
+  createdAt: Date
+}
+type ImageUrl{
+  url: String
+  id: String
+}
+type UserTeam {
+  adminId:String 
+  teamId: String
+  name: String
+  teamLink: String
+  urlImage: ImageUrl
+}
+
+type Query {
+  resendVerificationEmail(input: ResendVerificationEmailInput!): Boolean
+  sendResetPasswordEmail(input: SendResetPasswordEmailInput!): Boolean
+  searchUserByEmail(input: SearchUserByEmailInput!): UserPublicInfo
+  searchUserListByEmail(input: SearchUserByEmailInput!): [UserPublicInfo]
+  getTeamList: [UserTeam]! @auth
+  checkToken: Boolean @auth
+}
+
+type UserPublicInfo {
+  userId: String!
+  name: String!
+  email: String!
+}
+
+input SearchUserByEmailInput {
+  email: String!
+}
+
+input ResendVerificationEmailInput {
+  email: String! @email
+}
+
+input SendResetPasswordEmailInput {
+  email: String! @email
+}
+
+type AuthPayload {
+  token: String
+  name: String
+  email: String
+}
+
+type Mutation {
+  login(input: LoginInput!): AuthPayload
+  signUp(input: SignUpInput!): Boolean
+  activate(token: String!): Boolean
+  checkResetPasswordToken(token: String!): Boolean
+  loginWithGoogle(googleToken: String!): AuthPayload
+  loginWithFacebook(input: LoginWithFacebookInput!): AuthPayload
+  resetPassword(input: ResetPasswordInput!): Boolean
+}
+
+input LoginWithFacebookInput {
+  userId: String!
+  facebookToken: String!
+}
+
+input SignUpInput {
+  name: String! @name
+  email: String! @email
+  password: String! @password
+}
+
+input LoginInput {
+  email: String! @email
+  password: String! @minLength(min: 6)
+}
+
+input ResetPasswordInput {
+  token: String!
+  password: String! @password
+}

@@ -1,0 +1,63 @@
+version: "3.0"
+services:
+  poker_mongo:
+    image: mongo:5.0.0
+    restart: on-failure
+    ports:
+      - "27017:27017"
+    volumes:
+      - poker_mongo:/data/db
+    cpu_percent: 20
+    mem_limit: 200m
+  poker_redis:
+    image: redis:4.0.9-alpine
+    restart: on-failure
+    ports:
+      - "6379:6379"
+    volumes:
+      - poker_redis:/usr/local/etc/redis
+    cpu_percent: 20
+    mem_limit: 200m
+  poker_backend:
+    image: designveloper/planning-poker-backend:staging
+    restart: on-failure
+    pull_policy: always
+    depends_on:
+      - poker_mongo
+      - poker_redis
+    ports:
+      - "4300:4300"
+    environment:
+      - MONGO_URL=mongodb://poker_mongo:27017/planning_poker
+      - REDIS_URL=redis://poker_redis:6379
+      - REDIS_PUBSUB_URL=redis://poker_redis:6379
+      - PORT=4300
+      - BCRYPT_SALT_ROUND=10
+      - EMAIL=luminplaningpoker@gmail.com
+      - PASSWORD=poker123!
+      - CLIENT_DOMAIN=https://luminpoker.tech
+      - GOOGLE_CLIENT_ID=570776384402-lqhk256og6a504mmuivdlloeqnidou38.apps.googleusercontent.com
+      - JWT_ACTIVATE_USER=jwt-activate-user
+      - JWT_ACCESS_TOKEN=jwt-access-token
+      - JWT_RESET_PASSWORD=jwt-reset-password
+      - JWT_INVITATION=jwt-invitation
+      - CLOUDINARY_NAME=dsv-lumin
+      - CLOUDINARY_API_KEY=553283841381965
+      - CLOUDINARY_API_SECRET=Iks24rWOqvZwA2aV1q9fJ2nAFWU
+      - JIRA_API_ID=KCawOlvdO9kKROkDdK35PHqU7xqQtcnp
+      - JIRA_API_SECRET=hF8C8MwRo2TfsAv9w8wtaeztKq0PpWgqK0EXI9sjVxLdQidBjM6BcLhgq2tkIWu2
+    cpu_percent: 40
+    mem_limit: 200m
+  poker_webapp:
+    image: designveloper/planning-poker-webapp:staging
+    restart: on-failure
+    pull_policy: always
+    ports:
+      - "3000:80"
+    cpu_percent: 20
+    mem_limit: 100m
+volumes:
+  poker_mongo:
+    external: true
+  poker_redis:
+    external: true

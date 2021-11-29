@@ -1,0 +1,241 @@
+scalar Date
+scalar Void
+scalar Upload
+type Member {
+  userId: String
+  showPermission: Boolean
+}
+type UrlImage{
+  url: String
+  id: String
+}
+type Team {
+  _id: String
+  name: String
+  createdBy: String
+  votingSystem: Int
+  urlImage: UrlImage
+}
+
+type UserState {
+  _id: String
+  email: String
+  name: String
+  role: Int
+  isHost: Boolean
+  cardState: Int
+}
+
+type GamePayload {
+  _id: String
+  urlImage: UrlImage
+  adminId: String
+  name: String
+  allUserState: [UserState]
+  votingSystem: Int
+  currentPoint: Int
+  role: Int
+  isHost: Boolean
+  cardIssue: [CardIssue]
+  currentCard: String
+}
+
+type JiraSite {
+  id: String
+  url: String
+  name: String
+}
+
+type JiraAccess {
+  jiraToken: String
+  jiraSiteList: [JiraSite]
+}
+
+type JiraProject {
+  id: String
+  key: String
+  name: String
+}
+
+input CreateMemberInput {
+  email: String!
+  role: Int!
+}
+
+input JiraAuth{
+  jiraCloudId: String!
+  jiraToken: String!
+}
+
+input JiraAuthImport {
+  project: String!
+  jiraToken: String!
+  jiraCloudId: String!
+  url: String!
+  page: Int
+  limit: Int
+}
+
+type Query {
+  getAllTeam: Team
+  getTeamByAdmin: Team @auth
+  getGameState(teamId: String!): GamePayload @auth
+  getAllCardIssueByTeamId(teamId: String!): [CardIssue] @auth
+  getListSiteJira(code: String!): JiraAccess @auth
+  getListProjectFromJira(input: JiraAuth!): [JiraProject] @auth
+  getListCardIssueFromJira(input: JiraAuthImport!): GetListCardIssueFromJira @auth
+}
+
+type Mutation {
+  createTeam(input: CreateTeamInput!): String
+  editTeam(input: EditTeamInput!):Team
+  importListCardIssue(input: ImportListCardIssueInput!): [CardIssue] @auth
+  createCardIssue(input: CreateCardIssueInput!): CardIssue @auth
+  updateCardIssue(input: CardIssueUpdateInput!): CardIssue @auth
+  selectCardIssue(input: SelectCardIssueInput!) : Void @auth
+  removeAllCardIssue(teamId: String!): Void @auth
+  removeCardIssueById(input: SelectCardIssueInput!): Void @auth
+  pickCard(input: PickCardInput!): Void @auth
+  pickCardAndShow(input: PickCardInput!): Void @auth
+  showCards(teamId: String! ): Void @auth
+  restartGame(teamId: String!): Void @auth
+  startTimer(input: StartTimerInput!): Void @auth
+  changeHost(input: ChangeHost!):Void @auth
+  changeHostWhenJiraCallback(input: ChangeHost!):Void @auth
+  setHost(teamId: String!): Void @auth
+  joinToGame(teamId: String!): Void @auth
+  pingUser(input: PingUserInput!): Void @auth
+  inviteToTeam(input: InviteToTeamInput!): Void @auth
+  changeRole(input: ChangeRoleInput!): Void @auth
+}
+
+input ChangeHost {
+  teamId: String!
+  userId: String!
+}
+input CreateTeamInput {
+  name: String!
+  adminEmail: String!
+  members: [CreateMemberInput]!
+  file: Upload
+}
+input EditTeamInput{
+  teamId: String!
+  name: String!
+  file: Upload
+}
+input ImportListCardIssueInput{
+  teamId: String!
+  issues: [ImportCardIssueInput]!
+}
+
+input ImportCardIssueInput {
+  issue: String!
+  voteScore: Int
+  link: String
+  description: String
+}
+
+input CreateCardIssueInput {
+  _id: String
+  teamId: String!
+  issue: String!
+  voteScore: Int
+  link: String
+  description: String
+}
+
+input SelectCardIssueInput {
+  teamId: String!
+  cardId: String!
+  isSelect: Boolean
+}
+
+input ChangeRoleInput {
+  teamId: String!
+  userId: String!
+  role: Int!
+}
+
+input PingUserInput {
+  teamId: String!
+  userId: String!
+}
+
+input PickCardInput {
+  teamId: String!
+  point: Int!
+}
+
+
+input InviteToTeamInput{
+  teamId: String!
+  members: [CreateMemberInput]!
+}
+
+input StartTimerInput {
+  teamId: String!
+  timer: Int!
+}
+
+type Subscription {
+  subscribeToGame(teamId: String!): SubscribeToGamePayload
+}
+
+type SubscribeToGamePayload {
+  code: String!
+  userAction: UserAction
+  cardValues: [UserCardValue]
+  cardIssue: CardIssue
+  cardIssues: [CardIssue]
+  timer: Timer
+  currentPoint: Int
+  newMember: [UserPublicInfo]
+  currentCard: String
+}
+
+type Timer {
+  timer: Int!
+  timerLeft: Int
+}
+
+type UserPublicInfo {
+  userId: String!
+  name: String!
+  email: String!
+  role: Int!
+}
+
+type UserAction {
+  _id: String!
+  cardState: Int
+  role: Int
+}
+
+type UserCardValue {
+  _id: String!
+  point: Int!
+}
+
+type CardIssue {
+  _id: String!
+  issue: String
+  voteScore: Int
+  link: String
+  description: String
+  createAt: Date
+}
+
+input CardIssueUpdateInput {
+  _id: String!
+  issue: String
+  voteScore: Int
+  teamId:String!
+  link: String
+  description: String
+}
+
+type GetListCardIssueFromJira {
+ total: Int, 
+ listIssue: [CardIssue]
+}
