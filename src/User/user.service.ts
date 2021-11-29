@@ -10,6 +10,7 @@ import { MailUtil } from 'utils/Mail/mail.util';
 
 import {
   IUser, ILoginSuccess, IUserPublicInfo, ITeamInfo,
+  ICreateSubscription, IUserInfo, IInvoice, Subscription,
 } from 'User/interfaces/user.interface';
 
 import * as RedisService from 'services/Redis.service';
@@ -23,6 +24,8 @@ import * as ErrorCode from '../constants/errorCode.constant';
 import * as RedisExpireTime from '../constants/redisExpireTime.constant';
 import * as RedisPrefix from '../constants/redisPrefix.constant';
 import * as Attempt from '../constants/attempt.constant';
+
+const stripe = require('stripe')(process.env.STRIPE_SECRET_API);
 
 const mailUtil = new MailUtil();
 
@@ -71,6 +74,10 @@ export class UserService {
       urlImage: membership.team.urlImage || null,
     }));
     return teamList;
+  }
+
+  getUserId(userId: string): string {
+    return userId;
   }
 
   async activate(token: string): Promise<boolean> {
@@ -171,7 +178,7 @@ export class UserService {
     const token = this.getAccessToken(user._id);
 
     return {
-      token, name: user.name, email: user.email,
+      token, name: user.name, email: user.email, stripeCustomerId: user.stripeCustomerId,
     };
   }
 
@@ -352,6 +359,7 @@ export class UserService {
       token,
       name: user.name,
       email: user.email,
+      stripeCustomerId: user.stripeCustomerId,
     };
   }
 
@@ -373,6 +381,7 @@ export class UserService {
       token,
       name: user.name,
       email: user.email,
+      stripeCustomerId: user.stripeCustomerId,
     };
   }
 
@@ -403,4 +412,153 @@ export class UserService {
 
     return null;
   }
+
+  async searchUserById(id: string): Promise<IUserInfo> {
+    try {
+      const user: IUser = await UserSchema.findById(id);
+      return {
+        userId: user._id,
+        email: user.email,
+        name: user.name,
+        stripeCustomerId: user.stripeCustomerId,
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // todo: create a subscription
+  // ref: https://stripe.com/docs/billing/subscriptions/build-subscription
+  // 1. check email address
+  // 2. if not exists create a new customer and save to DB else get customer
+  // 3. create a new subscription by default incomplete
+  async createSubscription(input: { priceId: string }, userId: string): Promise<ICreateSubscription> {
+    const { priceId } = input;
+    try {
+      const user = await UserSchema.findById(userId);
+      if (!user.stripeCustomerId) {
+        const customer = await stripe.customers.create({ email: user.email });
+        user.stripeCustomerId = customer.id;
+        user.save();
+      }
+      // Create the subscription. Note we're expanding the Subscription's
+      // latest invoice and that invoice's payment_intent
+      // so we can pass it to the front end to confirm the payment
+      const subscription = await stripe.subscriptions.create({
+        customer: user.stripeCustomerId,
+        items: [{
+          price: priceId,
+        }],
+        // trial_end: Math.floor((Date.now() + 24 * 15 * 60 * 60 * 1000) / 1000), // trial 15 days
+        payment_behavior: 'default_incomplete',
+        expand: ['latest_invoice.payment_intent'],
+      });
+      return {
+        stripeCustomerId: user.stripeCustomerId,
+        subscriptionId: subscription.id,
+        clientSecret: subscription.latest_invoice.payment_intent.client_secret,
+      };
+    } catch (error) {
+      return { message: error.message };
+    }
+  }
+
+  async getUserSubscriptions(customer: string): Promise<Subscription[]> {
+    try {
+      const subscriptionsRes = await stripe.subscriptions.list({ customer });
+      const subscriptions = [];
+      subscriptionsRes.data.map((subscription) => subscriptions.push({
+        id: subscription.id,
+        status: subscription.status,
+        priceId: subscription.items.data[0].price.id,
+        interval: subscription.items.data[0].price.recurring.interval,
+        quantity: subscription.items.data[0].quantity,
+        created: subscription.created,
+        currentPeriodStart: subscription.current_period_start,
+        currentPeriodEnd: subscription.current_period_end,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      }));
+      return subscriptions;
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  }
+
+  async getSubscriptionInvoices(subscription: string): Promise<IInvoice[]> {
+    try {
+      const invoicesRes = await stripe.invoices.list({ subscription });
+      const invoices = [];
+      invoicesRes.data.map((invoice) => invoices.push({
+        id: invoice.id,
+        number: invoice.number,
+        created: invoice.created,
+        total: invoice.total,
+        hostedInvoiceUrl: invoice.hosted_invoice_url,
+        customerEmail: invoice.customer_email,
+        subscription: invoice.subscription,
+      }));
+      return invoices;
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  }
+
+  async getInvoice(invoiceId: string): Promise<IInvoice> {
+    try {
+      const invoice = await stripe.invoices.retrieve(invoiceId);
+      return {
+        id: invoice.id,
+        number: invoice.number,
+        created: invoice.created,
+        total: invoice.total,
+        hostedInvoiceUrl: invoice.hosted_invoice_url,
+        customerEmail: invoice.customer_email,
+        subscription: invoice.subscription,
+      };
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  }
+
+  async getUserBillingByStripe(customer: string): Promise<string> {
+    try {
+      const invoice = await stripe.billingPortal.sessions.create({
+        customer,
+        return_url: process.env.CLIENT_DOMAIN,
+      });
+      // console.log(invoice)
+      return invoice.url;
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  }
+
+  async reactivateSubscription(subscriptionId: string): Promise<string> {
+    try {
+      await stripe.subscriptions.update(subscriptionId, { cancel_at_period_end: false });
+      return 'Your subscription was reactivated';
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  }
+
+  async cancelSubscription(subscriptionId: string): Promise<string> {
+    try {
+      await stripe.subscriptions.update(subscriptionId, { cancel_at_period_end: true });
+      return 'Your subscription was cancelled';
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  }
+
+  // async webhook(data: any): Promise<string> {
+  //   console.log(data)
+  //   return 'webhook';
+  // }
 }

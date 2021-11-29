@@ -27,6 +27,33 @@ type Query {
   searchUserListByEmail(input: SearchUserByEmailInput!): [UserPublicInfo]
   getTeamList: [UserTeam]! @auth
   checkToken: Boolean @auth
+  getUserId: String @auth
+  getUserSubscriptions(customer: String!): [Subscription] @auth
+  getSubscriptionInvoices(subscription: String!): [Invoice] @auth
+  getInvoice(invoiceId: String!): Invoice @auth
+  getUserBillingByStripe(customer: String!): String @auth
+}
+
+type Subscription {
+  id: String,
+  status: String,
+  priceId: String,
+  interval: String,
+  quantity: Int,
+  created: Int,
+  currentPeriodStart: Int,
+  currentPeriodEnd: Int,
+  cancelAtPeriodEnd: Boolean,
+}
+
+type Invoice {
+  id: String,
+  number: String,
+  created: Int,
+  total: Int,
+  hostedInvoiceUrl: String,
+  customerEmail: String,
+  subscription: String,
 }
 
 type UserPublicInfo {
@@ -51,6 +78,7 @@ type AuthPayload {
   token: String
   name: String
   email: String
+  stripeCustomerId: String
 }
 
 type Mutation {
@@ -61,6 +89,21 @@ type Mutation {
   loginWithGoogle(googleToken: String!): AuthPayload
   loginWithFacebook(input: LoginWithFacebookInput!): AuthPayload
   resetPassword(input: ResetPasswordInput!): Boolean
+  createSubscription(input: SubscriptionInput!): Subscription @auth
+  reactivateSubscription(subscriptionId: String!): String @auth
+  cancelSubscription(subscriptionId: String!): String @auth
+  webhook: String @auth
+}
+
+input SubscriptionInput {
+  priceId: String!
+}
+
+type Subscription {
+  stripeCustomerId: String
+  subscriptionId: String
+  clientSecret: String
+  message: String
 }
 
 input LoginWithFacebookInput {

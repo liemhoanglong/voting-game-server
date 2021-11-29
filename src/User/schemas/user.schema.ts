@@ -23,7 +23,7 @@ const UserSchema = new Schema({
     type: Number,
     default: AUTH_TYPE.EMAIL,
   },
-//  role: String,
+  stripeCustomerId: String,
 });
 
 mongoose.model('User', UserSchema);

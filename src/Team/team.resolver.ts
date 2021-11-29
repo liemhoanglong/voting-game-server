@@ -26,7 +26,7 @@ const userResolver = {
       return teamService.getListCardIssueFromJira(input, userId);
     },
 
-    getListSiteJira: async (_, { code }: { code: string }): Promise<IJiraAccess> => teamService.getListSiteJira(code),
+    getCloudIdJira: async (_, { code }: { code: string }): Promise<IJiraAccess> => teamService.getCloudIdJira(code),
 
     getListProjectFromJira: async (_, { input }: { input: { jiraCloudId: string, jiraToken: string } }): Promise<[IJiraProject]> => (
       teamService.getListProjectFromJira(input.jiraCloudId, input.jiraToken)

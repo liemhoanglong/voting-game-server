@@ -163,7 +163,7 @@ export class TeamService {
   // 1. send https://auth.atlassian.com/oauth/token to get token
   // 2. send https://api.atlassian.com/oauth/token/accessible-resources to get cloudId
   // 3. send jira token and jira cloudId to client
-  async getListSiteJira(code: string): Promise<IJiraAccess> {
+  async getCloudIdJira(code: string): Promise<IJiraAccess> {
     let tokenRes;
     let jiraApp;
     try {
@@ -192,13 +192,10 @@ export class TeamService {
     } catch (error) {
       console.log(error);
     }
-    jiraApp.data.forEach((item) => {
-      delete item.scopes;
-      delete item.avatarUrl;
-    });
     return {
       jiraToken: tokenRes.data.access_token,
-      jiraSiteList: jiraApp.data,
+      jiraCloudId: jiraApp.data[0].id,
+      jiraUrl: jiraApp.data[0].url,
     };
   }
 
@@ -226,8 +223,8 @@ export class TeamService {
       // *👇👇👇👇 jql 👇👇👇👇*
       // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-jql/#api-rest-api-3-jql-parse-post
       // https://www.atlassian.com/blog/jira-software/jql-the-most-flexible-way-to-search-jira-14
-      // agile issuetype default = task | scrum issuetype default = story
-      const jql = `status='to do' and project in (${input.project}) and issuetype in (story,task)`;
+      // agile issuetype default = task | scrum issuetype default = story | custom bug
+      const jql = `status=%27to%20do%27%20and%20project%20in%20(${input.project})%20and%20issuetype%20in%20(story,task,bug)`;
       // customfield_10016 is Story point estimate in scrum jira
       const fields = 'summary,status,description,customfield_10016';
       const link = 'https://api.atlassian.com/ex/jira/';
@@ -249,7 +246,7 @@ export class TeamService {
         {
           voteScore: eachIssue.fields.customfield_10016,
           issue: eachIssue.fields.summary,
-          link: `${input.url}/browse/${eachIssue.key}`,
+          link: `${input.url}browse/${eachIssue.key}`,
           description: eachIssue.fields.description?.content[0]?.content[0]?.text ? eachIssue.fields.description?.content[0]?.content[0]?.text : '',
         }
       ));

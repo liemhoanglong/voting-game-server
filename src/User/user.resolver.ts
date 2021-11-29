@@ -1,5 +1,8 @@
 import { UserService } from 'User/user.service';
-import { ILoginSuccess, IUserPublicInfo, ITeamInfo } from 'User/interfaces/user.interface';
+import {
+  ILoginSuccess, IUserPublicInfo, ITeamInfo, ICreateSubscription,
+  IInvoice, Subscription,
+} from 'User/interfaces/user.interface';
 
 const userService = new UserService();
 
@@ -37,6 +40,33 @@ const userResolver = {
     checkToken: (
       _,
     ): boolean => true,
+
+    getUserId: (
+      _,
+      args,
+      context,
+    ): string => userService.getUserId(context.req.userId),
+
+    getUserSubscriptions: async (
+      _,
+      { customer }: { customer: string },
+    ): Promise<Subscription[]> => userService.getUserSubscriptions(customer),
+
+    getSubscriptionInvoices: async (
+      _,
+      { subscription }: { subscription: string },
+    ): Promise<IInvoice[]> => userService.getSubscriptionInvoices(subscription),
+
+    getInvoice: async (
+      _,
+      { invoiceId }: { invoiceId: string },
+    ): Promise<IInvoice> => userService.getInvoice(invoiceId),
+
+    getUserBillingByStripe: async (
+      _,
+      { customer }: { customer: string },
+    ): Promise<string> => userService.getUserBillingByStripe(customer),
+
   },
 
   Mutation: {
@@ -81,6 +111,29 @@ const userResolver = {
       const { token, password } = input;
       return userService.resetPassword(token, password);
     },
+
+    createSubscription: async (
+      _,
+      { input }: { input: { priceId: string } },
+      context,
+    ): Promise<ICreateSubscription> => (userService.createSubscription(input, context.req.userId)),
+
+    reactivateSubscription: async (
+      _,
+      { subscriptionId }: { subscriptionId: string },
+    ): Promise<string> => userService.reactivateSubscription(subscriptionId),
+
+    cancelSubscription: async (
+      _,
+      { subscriptionId }: { subscriptionId: string },
+    ): Promise<string> => userService.cancelSubscription(subscriptionId),
+
+    // webhook: async (
+    //   _,
+    //   agrs,
+    //   context,
+    // ): Promise<string> => userService.webhook(context.req),
+
   },
 };
 

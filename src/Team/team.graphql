@@ -36,19 +36,14 @@ type GamePayload {
   currentPoint: Int
   role: Int
   isHost: Boolean
-  cardIssue: [CardIssue]
+  cardIssue:[CardIssue]
   currentCard: String
-}
-
-type JiraSite {
-  id: String
-  url: String
-  name: String
 }
 
 type JiraAccess {
   jiraToken: String
-  jiraSiteList: [JiraSite]
+  jiraCloudId: String
+  jiraUrl: String
 }
 
 type JiraProject {
@@ -81,7 +76,7 @@ type Query {
   getTeamByAdmin: Team @auth
   getGameState(teamId: String!): GamePayload @auth
   getAllCardIssueByTeamId(teamId: String!): [CardIssue] @auth
-  getListSiteJira(code: String!): JiraAccess @auth
+  getCloudIdJira(code: String!): JiraAccess @auth
   getListProjectFromJira(input: JiraAuth!): [JiraProject] @auth
   getListCardIssueFromJira(input: JiraAuthImport!): GetListCardIssueFromJira @auth
 }

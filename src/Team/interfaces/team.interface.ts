@@ -22,15 +22,10 @@ export interface IJiraProject {
   name: string;
 }
 
-export interface IJiraSite {
-  id: string;
-  url: string;
-  name: string;
-}
-
 export interface IJiraAccess {
   jiraToken: string;
-  jiraSiteList: IJiraSite[];
+  jiraCloudId: string;
+  jiraUrl: string;
 }
 
 export interface JiraAuthImport {
@@ -83,15 +78,6 @@ export interface IGameState {
   currentCard: string;
 }
 
-export interface ICardIssue {
-  _id: string,
-  issue?: string,
-  voteScore?: number,
-  link?: string,
-  description?: string,
-  createAt?: Date,
-}
-
 export interface IGameSubscription {
   code: string;
   userAction?: {
@@ -99,17 +85,31 @@ export interface IGameSubscription {
     cardState?: number,
     role?: number,
     isHost?: boolean,
-  };
+  }
   cardValues?: {
     _id: string,
     point: number,
-  }[];
+  }[]
   timer?: {
     timer: number,
     timerLeft?: number,
-  };
-  cardIssue?: ICardIssue;
-  cardIssues?: ICardIssue[];
+  }
+  cardIssue?: {
+    _id: string,
+    issue?: string,
+    voteScore?: number,
+    link?: string,
+    description?: string,
+    createAt?: Date,
+  }
+  cardIssues?: {
+    _id?: string,
+    issue?: string,
+    voteScore?: number,
+    link?: string,
+    description?: string,
+    createAt?: Date,
+  }[]
   currentPoint?: number,
   newMember?: {
     userId: string,
